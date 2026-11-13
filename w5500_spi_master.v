@@ -1,0 +1,361 @@
+module w5500_spi_master (
+    input  wire         clk,            // 27 MHz System Clock
+    input  wire         reset_n,
+
+    // Interface to AES-256-CTR Output
+    input  wire [127:0] aes_ciphertext,
+    input  wire         aes_done,
+    output reg          spi_ready,      // Backpressure to pixel_packer_128
+
+    // Physical W5500 SPI Pins
+    output reg          w5500_rst_n,
+    output reg          w5500_cs_n,
+    output reg          w5500_sclk,
+    output reg          w5500_mosi,
+    input  wire         w5500_miso,
+
+    // Status LED (toggles on every 1024-byte UDP packet transmitted)
+    output reg          tx_led
+);
+
+    // -------------------------------------------------------------------------
+    // Low-Level SPI Mode 0 Transaction Engine (13.5 MHz SCLK from 27 MHz clk)
+    // -------------------------------------------------------------------------
+    localparam [2:0] SPI_IDLE  = 3'd0,
+                     SPI_SETUP = 3'd1,
+                     SPI_HIGH  = 3'd2,
+                     SPI_END   = 3'd3,
+                     SPI_DONE  = 3'd4;
+
+    reg [2:0]   spi_state;
+    reg         txn_start;
+    reg         txn_busy;
+    reg [15:0]  txn_addr;
+    reg [7:0]   txn_ctrl;
+    reg [4:0]   txn_len;        // 1 for register write, 16 for 128-bit block
+    reg [127:0] txn_data;
+    reg [4:0]   byte_idx;
+    reg [2:0]   bit_idx;
+    reg [7:0]   cur_byte;
+
+    always @(*) begin
+        case (byte_idx)
+            5'd0:    cur_byte = txn_addr[15:8];
+            5'd1:    cur_byte = txn_addr[7:0];
+            5'd2:    cur_byte = txn_ctrl;
+            5'd3:    cur_byte = txn_data[127:120];
+            5'd4:    cur_byte = txn_data[119:112];
+            5'd5:    cur_byte = txn_data[111:104];
+            5'd6:    cur_byte = txn_data[103:96];
+            5'd7:    cur_byte = txn_data[95:88];
+            5'd8:    cur_byte = txn_data[87:80];
+            5'd9:    cur_byte = txn_data[79:72];
+            5'd10:   cur_byte = txn_data[71:64];
+            5'd11:   cur_byte = txn_data[63:56];
+            5'd12:   cur_byte = txn_data[55:48];
+            5'd13:   cur_byte = txn_data[47:40];
+            5'd14:   cur_byte = txn_data[39:32];
+            5'd15:   cur_byte = txn_data[31:24];
+            5'd16:   cur_byte = txn_data[23:16];
+            5'd17:   cur_byte = txn_data[15:8];
+            5'd18:   cur_byte = txn_data[7:0];
+            default: cur_byte = 8'h00;
+        endcase
+    end
+
+    always @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            spi_state  <= SPI_IDLE;
+            txn_busy   <= 1'b0;
+            w5500_cs_n <= 1'b1;
+            w5500_sclk <= 1'b0;
+            w5500_mosi <= 1'b0;
+            byte_idx   <= 5'd0;
+            bit_idx    <= 3'd7;
+        end else begin
+            case (spi_state)
+                SPI_IDLE: begin
+                    w5500_cs_n <= 1'b1;
+                    w5500_sclk <= 1'b0;
+                    w5500_mosi <= 1'b0;
+                    if (txn_start) begin
+                        txn_busy   <= 1'b1;
+                        w5500_cs_n <= 1'b0;
+                        byte_idx   <= 5'd0;
+                        bit_idx    <= 3'd7;
+                        spi_state  <= SPI_SETUP;
+                    end else begin
+                        txn_busy <= 1'b0;
+                    end
+                end
+
+                SPI_SETUP: begin
+                    w5500_sclk <= 1'b0;
+                    w5500_mosi <= cur_byte[bit_idx];
+                    spi_state  <= SPI_HIGH;
+                end
+
+                SPI_HIGH: begin
+                    w5500_sclk <= 1'b1;
+                    if (bit_idx == 3'd0) begin
+                        if (byte_idx == (5'd2 + txn_len)) begin
+                            spi_state <= SPI_END;
+                        end else begin
+                            byte_idx  <= byte_idx + 5'd1;
+                            bit_idx   <= 3'd7;
+                            spi_state <= SPI_SETUP;
+                        end
+                    end else begin
+                        bit_idx   <= bit_idx - 3'd1;
+                        spi_state <= SPI_SETUP;
+                    end
+                end
+
+                SPI_END: begin
+                    w5500_sclk <= 1'b0;
+                    spi_state  <= SPI_DONE;
+                end
+
+                SPI_DONE: begin
+                    w5500_cs_n <= 1'b1;
+                    w5500_mosi <= 1'b0;
+                    txn_busy   <= 1'b0;
+                    spi_state  <= SPI_IDLE;
+                end
+
+                default: spi_state <= SPI_IDLE;
+            endcase
+        end
+    end
+
+    // -------------------------------------------------------------------------
+    // W5500 Initialization ROM (Common + Socket 0 UDP Registers)
+    // Network: FPGA 192.168.1.50:5005 -> Laptop 192.168.1.10:5005
+    // -------------------------------------------------------------------------
+    localparam [4:0] INIT_COUNT = 5'd29;
+    reg [4:0]  init_idx;
+    reg [31:0] init_rom; // {addr[15:0], ctrl[7:0], data[7:0]}
+
+    always @(*) begin
+        case (init_idx)
+            5'd0:    init_rom = {16'h0000, 8'h04, 8'h80}; // MR: Soft Reset
+            // Gateway IP: 192.168.1.1
+            5'd1:    init_rom = {16'h0001, 8'h04, 8'd192};
+            5'd2:    init_rom = {16'h0002, 8'h04, 8'd168};
+            5'd3:    init_rom = {16'h0003, 8'h04, 8'd1};
+            5'd4:    init_rom = {16'h0004, 8'h04, 8'd1};
+            // Subnet Mask: 255.255.255.0
+            5'd5:    init_rom = {16'h0005, 8'h04, 8'd255};
+            5'd6:    init_rom = {16'h0006, 8'h04, 8'd255};
+            5'd7:    init_rom = {16'h0007, 8'h04, 8'd255};
+            5'd8:    init_rom = {16'h0008, 8'h04, 8'd0};
+            // Source MAC: 02:08:DC:12:34:56
+            5'd9:    init_rom = {16'h0009, 8'h04, 8'h02};
+            5'd10:   init_rom = {16'h000A, 8'h04, 8'h08};
+            5'd11:   init_rom = {16'h000B, 8'h04, 8'hDC};
+            5'd12:   init_rom = {16'h000C, 8'h04, 8'h12};
+            5'd13:   init_rom = {16'h000D, 8'h04, 8'h34};
+            5'd14:   init_rom = {16'h000E, 8'h04, 8'h56};
+            // Source IP (FPGA): 192.168.1.50
+            5'd15:   init_rom = {16'h000F, 8'h04, 8'd192};
+            5'd16:   init_rom = {16'h0010, 8'h04, 8'd168};
+            5'd17:   init_rom = {16'h0011, 8'h04, 8'd1};
+            5'd18:   init_rom = {16'h0012, 8'h04, 8'd50};
+            // Socket 0 Mode: UDP (0x02)
+            5'd19:   init_rom = {16'h0000, 8'h0C, 8'h02};
+            // Socket 0 Source Port: 5005 (0x138D)
+            5'd20:   init_rom = {16'h0004, 8'h0C, 8'h13};
+            5'd21:   init_rom = {16'h0005, 8'h0C, 8'h8D};
+            // Socket 0 Destination IP (Laptop): 192.168.1.10
+            5'd22:   init_rom = {16'h000C, 8'h0C, 8'd192};
+            5'd23:   init_rom = {16'h000D, 8'h0C, 8'd168};
+            5'd24:   init_rom = {16'h000E, 8'h0C, 8'd1};
+            5'd25:   init_rom = {16'h000F, 8'h0C, 8'd10};
+            // Socket 0 Destination Port: 5005 (0x138D)
+            5'd26:   init_rom = {16'h0010, 8'h0C, 8'h13};
+            5'd27:   init_rom = {16'h0011, 8'h0C, 8'h8D};
+            // Socket 0 Command: OPEN (0x01)
+            5'd28:   init_rom = {16'h0001, 8'h0C, 8'h01};
+            default: init_rom = {16'h0000, 8'h04, 8'h00};
+        endcase
+    end
+
+    // -------------------------------------------------------------------------
+    // Main Controller FSM (Reset -> Configure UDP -> Stream 1024B Packets)
+    // -------------------------------------------------------------------------
+    localparam [3:0] ST_RST_LOW    = 4'd0,
+                     ST_RST_WAIT   = 4'd1,
+                     ST_INIT_ISSUE = 4'd2,
+                     ST_INIT_WAIT  = 4'd3,
+                     ST_READY      = 4'd4,
+                     ST_BLK_WAIT   = 4'd5,
+                     ST_WR_HI_ISS  = 4'd6,
+                     ST_WR_HI_WAIT = 4'd7,
+                     ST_WR_LO_ISS  = 4'd8,
+                     ST_WR_LO_WAIT = 4'd9,
+                     ST_SEND_ISS   = 4'd10,
+                     ST_SEND_WAIT  = 4'd11,
+                     ST_PKT_GAP    = 4'd12;
+
+    reg [3:0]  state;
+    reg [18:0] timer;
+    reg [15:0] tx_wr_ptr;
+    reg [5:0]  block_cnt;       // Counts 0..63 (64 * 16B = 1024B UDP payload)
+    wire       miso_unused = w5500_miso;
+
+    always @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            state       <= ST_RST_LOW;
+            w5500_rst_n <= 1'b0;
+            spi_ready   <= 1'b0;
+            txn_start   <= 1'b0;
+            txn_addr    <= 16'd0;
+            txn_ctrl    <= 8'd0;
+            txn_len     <= 5'd1;
+            txn_data    <= 128'd0;
+            init_idx    <= 5'd0;
+            timer       <= 19'd0;
+            tx_wr_ptr   <= 16'd0;
+            block_cnt   <= 6'd0;
+            tx_led      <= 1'b0;
+        end else begin
+            txn_start <= 1'b0;
+
+            case (state)
+                ST_RST_LOW: begin
+                    w5500_rst_n <= 1'b0;
+                    if (timer == 19'd54_000) begin // 2 ms hardware reset pulse
+                        w5500_rst_n <= 1'b1;
+                        timer       <= 19'd0;
+                        state       <= ST_RST_WAIT;
+                    end else begin
+                        timer <= timer + 19'd1;
+                    end
+                end
+
+                ST_RST_WAIT: begin
+                    if (timer == 19'd270_000) begin // 10 ms PLL lock wait
+                        timer    <= 19'd0;
+                        init_idx <= 5'd0;
+                        state    <= ST_INIT_ISSUE;
+                    end else begin
+                        timer <= timer + 19'd1;
+                    end
+                end
+
+                ST_INIT_ISSUE: begin
+                    if (!txn_busy && !txn_start) begin
+                        txn_addr  <= init_rom[31:16];
+                        txn_ctrl  <= init_rom[15:8];
+                        txn_len   <= 5'd1;
+                        txn_data  <= {init_rom[7:0], 120'd0};
+                        txn_start <= 1'b1;
+                        timer     <= 19'd0;
+                        state     <= ST_INIT_WAIT;
+                    end
+                end
+
+                ST_INIT_WAIT: begin
+                    if (!txn_busy && !txn_start) begin
+                        // Wait 2 ms after soft reset (index 0), 16 cycles otherwise
+                        if ((init_idx == 5'd0 && timer == 19'd54_000) ||
+                            (init_idx != 5'd0 && timer == 19'd16)) begin
+                            timer <= 19'd0;
+                            if (init_idx == (INIT_COUNT - 5'd1)) begin
+                                state <= ST_READY;
+                            end else begin
+                                init_idx <= init_idx + 5'd1;
+                                state    <= ST_INIT_ISSUE;
+                            end
+                        end else begin
+                            timer <= timer + 19'd1;
+                        end
+                    end
+                end
+
+                ST_READY: begin
+                    spi_ready <= 1'b1;
+                    if (aes_done) begin
+                        spi_ready <= 1'b0;
+                        txn_addr  <= tx_wr_ptr;
+                        txn_ctrl  <= 8'h14; // Socket 0 TX Buffer Write
+                        txn_len   <= 5'd16; // 16 bytes (128-bit ciphertext)
+                        txn_data  <= aes_ciphertext;
+                        txn_start <= 1'b1;
+                        state     <= ST_BLK_WAIT;
+                    end
+                end
+
+                ST_BLK_WAIT: begin
+                    if (!txn_busy && !txn_start) begin
+                        tx_wr_ptr <= tx_wr_ptr + 16'd16;
+                        if (block_cnt == 6'd63) begin
+                            block_cnt <= 6'd0;
+                            state     <= ST_WR_HI_ISS;
+                        end else begin
+                            block_cnt <= block_cnt + 6'd1;
+                            state     <= ST_READY;
+                        end
+                    end
+                end
+
+                ST_WR_HI_ISS: begin
+                    txn_addr  <= 16'h0024; // Sn_TX_WR0
+                    txn_ctrl  <= 8'h0C;
+                    txn_len   <= 5'd1;
+                    txn_data  <= {tx_wr_ptr[15:8], 120'd0};
+                    txn_start <= 1'b1;
+                    state     <= ST_WR_HI_WAIT;
+                end
+
+                ST_WR_HI_WAIT: begin
+                    if (!txn_busy && !txn_start)
+                        state <= ST_WR_LO_ISS;
+                end
+
+                ST_WR_LO_ISS: begin
+                    txn_addr  <= 16'h0025; // Sn_TX_WR1
+                    txn_ctrl  <= 8'h0C;
+                    txn_len   <= 5'd1;
+                    txn_data  <= {tx_wr_ptr[7:0], 120'd0};
+                    txn_start <= 1'b1;
+                    state     <= ST_WR_LO_WAIT;
+                end
+
+                ST_WR_LO_WAIT: begin
+                    if (!txn_busy && !txn_start)
+                        state <= ST_SEND_ISS;
+                end
+
+                ST_SEND_ISS: begin
+                    txn_addr  <= 16'h0001; // Sn_CR
+                    txn_ctrl  <= 8'h0C;
+                    txn_len   <= 5'd1;
+                    txn_data  <= {8'h20, 120'd0}; // SEND command
+                    txn_start <= 1'b1;
+                    timer     <= 19'd0;
+                    state     <= ST_SEND_WAIT;
+                end
+
+                ST_SEND_WAIT: begin
+                    if (!txn_busy && !txn_start)
+                        state <= ST_PKT_GAP;
+                end
+
+                ST_PKT_GAP: begin
+                    // Allow ~55 us for W5500 UDP frame transmission
+                    if (timer == 19'd1_500) begin
+                        timer  <= 19'd0;
+                        tx_led <= ~tx_led;
+                        state  <= ST_READY;
+                    end else begin
+                        timer <= timer + 19'd1;
+                    end
+                end
+
+                default: state <= ST_RST_LOW;
+            endcase
+        end
+    end
+
+endmodule
