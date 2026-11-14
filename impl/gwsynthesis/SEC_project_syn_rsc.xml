@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Module name="camera_top" Register="46" Alu="10" Lut="108" Bsram="1" T_Register="243(46)" T_Alu="17(10)" T_Lut="206(108)" T_Bsram="1(1)">
+ <SubModule name="u_pll"/>
+ <SubModule name="u_sccb" Register="37" Alu="7" Lut="91" T_Register="37(37)" T_Alu="7(7)" T_Lut="91(91)"/>
+ <SubModule name="u_capture" Register="26" Lut="2" T_Register="26(26)" T_Lut="2(2)"/>
+ <SubModule name="u_packer" Register="134" Lut="5" T_Register="134(134)" T_Lut="5(5)"/>
+</Module>

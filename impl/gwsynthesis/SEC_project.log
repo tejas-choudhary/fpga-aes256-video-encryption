@@ -1,0 +1,22 @@
+GowinSynthesis start
+Running parser ...
+Analyzing Verilog file 'C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\FIFO_HS_Top.v'
+Analyzing Verilog file 'C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\aes256_core.v'
+Analyzing Verilog file 'C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\aes256_ctr.v'
+Analyzing Verilog file 'C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\camera_top.v'
+Analyzing Verilog file 'C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\fifo_hs\fifo_hs.v'
+Analyzing Verilog file 'C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\gowin_rpll\gowin_rpll.v'
+Analyzing Verilog file 'C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\ov7670_capture.v'
+Analyzing Verilog file 'C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\pixel_packer_128.v'
+Analyzing Verilog file 'C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\sccb_master.v'
+Compiling module 'camera_top'("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\camera_top.v":1)
+Compiling module 'Gowin_rPLL'("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\gowin_rpll\gowin_rpll.v":10)
+Compiling module 'sccb_master'("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\sccb_master.v":1)
+Compiling module 'ov7670_capture'("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\ov7670_capture.v":1)
+Compiling module '**'("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\fifo_hs\fifo_hs.v":702)
+Compiling module 'pixel_packer_128'("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\pixel_packer_128.v":1)
+Compiling module 'aes256_ctr'("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\aes256_ctr.v":4)
+Compiling module 'aes256_core'("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\aes256_core.v":2)
+ERROR (EX3937) : Instantiating unknown module 'w5500_spi_master'("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\camera_top.v":157)
+Module 'camera_top' remains a black box due to errors in its contents("C:\Gowin\Gowin_V1.9.11.03_Education_x64\IDE\bin\Documents\fpga_project\Documents\SEC_project\src\camera_top.v":1)
+GowinSynthesis finish
