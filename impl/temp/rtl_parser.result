@@ -1,0 +1,78 @@
+[
+ {
+  "InstFile" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/fpga_project/Documents/SEC_project/src/camera_top.v",
+  "InstLine" : 1,
+  "InstName" : "camera_top",
+  "ModuleFile" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/fpga_project/Documents/SEC_project/src/camera_top.v",
+  "ModuleLine" : 1,
+  "ModuleName" : "camera_top",
+  "SubInsts" : [
+   {
+    "InstFile" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/fpga_project/Documents/SEC_project/src/camera_top.v",
+    "InstLine" : 106,
+    "InstName" : "u_fifo",
+    "ModuleFile" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/fpga_project/Documents/SEC_project/src/fifo_hs/fifo_hs.v",
+    "ModuleLine" : 9,
+    "ModuleName" : "FIFO_HS_Top"
+   },
+   {
+    "InstFile" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/fpga_project/Documents/SEC_project/src/camera_top.v",
+    "InstLine" : 79,
+    "InstName" : "u_pll",
+    "ModuleFile" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/fpga_project/Documents/SEC_project/src/gowin_rpll/gowin_rpll.v",
+    "ModuleLine" : 10,
+    "ModuleName" : "Gowin_rPLL"
+   },
+   {
+    "InstFile" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/fpga_project/Documents/SEC_project/src/camera_top.v",
+    "InstLine" : 85,
+    "InstName" : "u_sccb",
+    "ModuleFile" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/fpga_project/Documents/SEC_project/src/sccb_master.v",
+    "ModuleLine" : 1,
+    "ModuleName" : "sccb_master"
+   },
+   {
+    "InstFile" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/fpga_project/Documents/SEC_project/src/camera_top.v",
+    "InstLine" : 94,
+    "InstName" : "u_capture",
+    "ModuleFile" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/fpga_project/Documents/SEC_project/src/ov7670_capture.v",
+    "ModuleLine" : 1,
+    "ModuleName" : "ov7670_capture"
+   },
+   {
+    "InstFile" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/fpga_project/Documents/SEC_project/src/camera_top.v",
+    "InstLine" : 120,
+    "InstName" : "u_packer",
+    "ModuleFile" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/fpga_project/Documents/SEC_project/src/pixel_packer_128.v",
+    "ModuleLine" : 1,
+    "ModuleName" : "pixel_packer_128"
+   },
+   {
+    "InstFile" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/fpga_project/Documents/SEC_project/src/camera_top.v",
+    "InstLine" : 132,
+    "InstName" : "u_aes_ctr",
+    "ModuleFile" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/fpga_project/Documents/SEC_project/src/aes256_ctr.v",
+    "ModuleLine" : 4,
+    "ModuleName" : "aes256_ctr",
+    "SubInsts" : [
+     {
+      "InstFile" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/fpga_project/Documents/SEC_project/src/aes256_ctr.v",
+      "InstLine" : 19,
+      "InstName" : "u_aes256",
+      "ModuleFile" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/fpga_project/Documents/SEC_project/src/aes256_core.v",
+      "ModuleLine" : 2,
+      "ModuleName" : "aes256_core"
+     }
+    ]
+   },
+   {
+    "InstFile" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/fpga_project/Documents/SEC_project/src/camera_top.v",
+    "InstLine" : 145,
+    "InstName" : "u_w5500",
+    "ModuleFile" : "C:/Gowin/Gowin_V1.9.11.03_Education_x64/IDE/bin/Documents/fpga_project/Documents/SEC_project/src/w5500_spi_master_1.v",
+    "ModuleLine" : 1,
+    "ModuleName" : "w5500_spi_master"
+   }
+  ]
+ }
+]
