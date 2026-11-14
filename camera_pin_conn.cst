@@ -9,8 +9,8 @@ IO_PORT "reset_n" IO_TYPE=LVCMOS33 PULL_MODE=UP;
 IO_LOC "init_done_led" 15;
 IO_PORT "init_done_led" IO_TYPE=LVCMOS33 DRIVE=8;
 
-IO_LOC "debug_stream_out" 16;
-IO_PORT "debug_stream_out" IO_TYPE=LVCMOS33 DRIVE=8;
+IO_LOC "tx_activity_led" 16;
+IO_PORT "tx_activity_led" IO_TYPE=LVCMOS33 DRIVE=8;
 
 // OV7670 Control & Clock Signals
 IO_LOC "cam_xclk" 25;
@@ -60,9 +60,7 @@ IO_LOC "cam_d[6]" 79;
 IO_PORT "cam_d[6]" IO_TYPE=LVCMOS33 PULL_MODE=NONE;
 
 IO_LOC "cam_d[7]" 80;
-IO_PORT "cam_d[7]" IO_TYPE=LVCMOS33 PULL_MODE=NONE;// Replace debug_stream_out on Pin 16 with tx_activity_led
-IO_LOC "tx_activity_led" 16;
-IO_PORT "tx_activity_led" IO_TYPE=LVCMOS33 DRIVE=8;
+IO_PORT "cam_d[7]" IO_TYPE=LVCMOS33 PULL_MODE=NONE;
 
 // W5500 SPI Ethernet Module (Tang Nano 20K Header Pins 52-56)
 IO_LOC "w5500_sclk" 52;
