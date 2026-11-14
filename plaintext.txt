@@ -1,0 +1,24 @@
+fpga-aes256-video-encryption/
+├── rtl/
+│   ├── camera_top.v
+│   ├── ov7670_capture.v
+│   ├── sccb_master.v
+│   ├── pixel_packer_128.v
+│   ├── aes256_core.v
+│   ├── aes256_ctr.v
+│   ├── w5500_spi_master.v
+│   └── ip/
+│       ├── gowin_rpll.v
+│       └── fifo_hs.v
+├── tb/
+│   └── aes256_tb.v
+├── constraints/
+│   ├── camera_pin_conn.cst
+│   └── SEC_project.sdc
+├── software/
+│   ├── receiver.py
+│   └── requirements.txt
+├── docs/
+│   └── architecture_diagram.png   # Add your block diagram / PPT slides here
+├── .gitignore
+└── README.md

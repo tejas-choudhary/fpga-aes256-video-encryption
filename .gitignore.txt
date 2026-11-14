@@ -1,0 +1,23 @@
+# Gowin EDA Build & Output Artifacts
+impl/
+*.fs
+*.bin
+*.gprj.user
+*.log
+*.rpt
+*.vo
+*.sdf
+*.gao
+*.gsc
+
+# Simulation Waveforms
+*.vcd
+*.wlf
+work/
+
+# Python Environment & Cache
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.DS_Store
